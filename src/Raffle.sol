@@ -118,7 +118,9 @@ contract Raffle is VRFConsumerBaseV2 {
         return (upkeepNeeded, "0x0");
     }
 
-    /*  1. Get a random no.
+    /*  
+        @dev: performUpKeep() will find the lottery winner
+        1. Get a random no.
         2. Use the random no. to pick a winner
         3. Be automatically triggered
     */
@@ -148,6 +150,7 @@ contract Raffle is VRFConsumerBaseV2 {
 
     /*
     CEI design pattern: Checks, Effects, Interactions
+    @dev: fulfillRandomWords is a callback function which is called once requestRandomWords gets the random words from the oracles
      */
 
     function fulfillRandomWords(
@@ -174,5 +177,15 @@ contract Raffle is VRFConsumerBaseV2 {
     // GETTER FUNCTIONS
     function getEntranceFee() external view returns (uint256) {
         return i_entranceFee;
+    }
+
+    function getRaffleState() external view returns (RaffleState) {
+        return s_raffleState;
+    }
+
+    function getRafflePlayer(
+        uint256 indexOfPlayer
+    ) external view returns (address) {
+        return s_players[indexOfPlayer];
     }
 }
