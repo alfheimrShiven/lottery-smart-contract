@@ -6,17 +6,9 @@ import {Script, console} from "forge-std/Script.sol";
 import {HelperConfig} from "./HelperConfig.s.sol";
 import {VRFCoordinatorV2Mock} from "@chainlink/contracts/src/v0.8/mocks/VRFCoordinatorV2Mock.sol";
 import {LinkToken} from "../test/mocks/LinkToken.sol";
+import {DevOpsTools} from "lib/foundry-devops/src/DevOpsTools.sol";
 
 contract CreateSubscription is Script {
-    function createVRFSubscriptionUsingConfig() public returns (uint64) {
-        // getting the VRF Coordinator
-        HelperConfig helperConfig = new HelperConfig();
-        (, , address vrfCoordinator, , , , ) = helperConfig
-            .activeNetworkConfig();
-
-        return createVRFSubscription(vrfCoordinator);
-    }
-
     function createVRFSubscription(
         address vrfCoordinator
     ) public returns (uint64) {
@@ -29,6 +21,15 @@ contract CreateSubscription is Script {
         return subId;
     }
 
+    function createVRFSubscriptionUsingConfig() public returns (uint64) {
+        // getting the VRF Coordinator
+        HelperConfig helperConfig = new HelperConfig();
+        (, , address vrfCoordinator, , , , ) = helperConfig
+            .activeNetworkConfig();
+
+        return createVRFSubscription(vrfCoordinator);
+    }
+
     function run() external returns (uint64) {
         return createVRFSubscriptionUsingConfig();
     }
@@ -36,22 +37,6 @@ contract CreateSubscription is Script {
 
 contract FundSubscription is Script {
     uint96 public constant FUND_AMOUNT = 3 ether;
-
-    function fundSubscriptionUsingConfig() public {
-        HelperConfig helperConfig = new HelperConfig();
-        (
-            ,
-            ,
-            address vrfCoordinator,
-            uint64 subId,
-            ,
-            ,
-            address link
-        ) = helperConfig.activeNetworkConfig();
-
-        // fund
-        fundVRFSubscription(vrfCoordinator, subId, link);
-    }
 
     function fundVRFSubscription(
         address vrfCoordinator,
@@ -82,7 +67,58 @@ contract FundSubscription is Script {
         }
     }
 
+    function fundSubscriptionUsingConfig() public {
+        HelperConfig helperConfig = new HelperConfig();
+        (
+            ,
+            ,
+            address vrfCoordinator,
+            uint64 subId,
+            ,
+            ,
+            address link
+        ) = helperConfig.activeNetworkConfig();
+
+        // fund
+        fundVRFSubscription(vrfCoordinator, subId, link);
+    }
+
     function run() external {
         fundSubscriptionUsingConfig();
+    }
+}
+
+contract AddConsumer is Script {
+    function addConsumer(
+        address vrfCoordinatorAddress,
+        uint64 subId,
+        address consumerContract
+    ) public {
+        console.log("Adding consumer contract: ", consumerContract);
+        console.log("Using VRFCoordinator: ", vrfCoordinatorAddress);
+        console.log("On ChainID: ", block.chainid);
+
+        vm.startBroadcast();
+        VRFCoordinatorV2Mock(vrfCoordinatorAddress).addConsumer(
+            subId,
+            consumerContract
+        );
+        vm.stopBroadcast();
+    }
+
+    function addConsumerUsingConfig(address consumerContract) public {
+        HelperConfig helperConfig = new HelperConfig();
+        (, , address vrfCoordinatorAddress, uint64 subId, , , ) = helperConfig
+            .activeNetworkConfig();
+
+        addConsumer(vrfCoordinatorAddress, subId, consumerContract);
+    }
+
+    function run() external {
+        address consumerContract = DevOpsTools.get_most_recent_deployment(
+            "Raffle",
+            block.chainid
+        );
+        addConsumerUsingConfig(consumerContract);
     }
 }

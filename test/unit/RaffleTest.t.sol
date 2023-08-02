@@ -67,7 +67,7 @@ contract RaffleTest is Test {
         vm.warp(block.timestamp + activeNetworkConfig.interval + 1);
         vm.roll(block.number + 1);
         // Act
-        raffle.checkUpkeep(""); // this will call performUpKeep() and put the raffle in a calculating state
+        raffle.performUpkeep(""); // put the raffle in a calculating state
 
         // Arrange to Enter raffle again
         vm.expectRevert(); // vm.expectRevert(Raffle.Raffle__RaffleNotOpen.selecctor)
