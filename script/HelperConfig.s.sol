@@ -30,7 +30,7 @@ contract HelperConfig is Script {
                 entranceFee: 0.1 ether,
                 interval: 30,
                 vrfCoordinator: 0x8103B0A8A00be2DDC778e6e7eaa21791Cd364625,
-                subscriptionId: 4063,
+                subscriptionId: 0, // if left as 0, our DeployRaffle.s.sol script will create and update this
                 gasLane: 0x474e34a077df58807dbe9c96d3c009b23b3c6d0cce433e59bbf5b34f823bc56c,
                 callbackGasLimit: 500000
             });
@@ -60,7 +60,7 @@ contract HelperConfig is Script {
                 entranceFee: 0.1 ether,
                 interval: 30,
                 vrfCoordinator: address(vrfCoordinatorV2Mock),
-                subscriptionId: 4063, // to be updated later
+                subscriptionId: 0, // if left as 0, our DeployRaffle.s.sol script will create and update this
                 gasLane: 0x474e34a077df58807dbe9c96d3c009b23b3c6d0cce433e59bbf5b34f823bc56c,
                 callbackGasLimit: 500000
             });

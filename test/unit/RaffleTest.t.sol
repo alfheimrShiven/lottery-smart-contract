@@ -59,11 +59,20 @@ contract RaffleTest is Test {
         assert(raffle.getRafflePlayer(0) == PLAYER);
     }
 
-    function testRaffleStateShouldBeOpenOnEntry() public {
+    function testRaffleShouldNotAllowEntryWhenCalculating() public {
+        // Arrange to Start the raffle
         vm.prank(PLAYER);
         raffle.enterRaffle{value: activeNetworkConfig.entranceFee}();
+        vm.warp(block.timestamp + activeNetworkConfig.interval + 1);
+        vm.roll(block.number + 1);
+        // Act
+        raffle.checkUpkeep(""); // this will call performUpKeep() and put the raffle in a calculating state
 
-        assert(raffle.getRaffleState() == Raffle.RaffleState.OPEN);
+        // Arrange to Enter raffle again
+        vm.expectRevert(); // vm.expectRevert(Raffle.Raffle__RaffleNotOpen.selecctor)
+        vm.prank(PLAYER);
+        // Act again
+        raffle.enterRaffle{value: activeNetworkConfig.entranceFee}();
     }
 
     function testEnterRaffleEventEmit() public {
