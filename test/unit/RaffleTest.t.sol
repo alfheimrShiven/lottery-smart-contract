@@ -7,6 +7,7 @@ import {DeployRaffle} from "../../script/DeployRaffle.s.sol";
 import {Raffle} from "../../src/Raffle.sol";
 import {HelperConfig} from "../../script/HelperConfig.s.sol";
 import {Vm} from "forge-std/Vm.sol";
+import {VRFCoordinatorV2Mock} from "@chainlink/contracts/src/v0.8/mocks/VRFCoordinatorV2Mock.sol";
 
 contract RaffleTest is Test {
     Raffle internal raffle;
@@ -22,10 +23,6 @@ contract RaffleTest is Test {
         // Deploy the contract to be tested
         DeployRaffle deployRaffle = new DeployRaffle();
         raffle = deployRaffle.run();
-
-        deploymentTimeStamp = block.timestamp;
-        /* this is been recorded to match the s_lastTimeStamp value of the Raffle.sol contract. 
-        Will be used in `testCheckUpKeepReturnsFalseIfEnoughTimeHasntPassed` to restore the block timestamp to when Raffle was deployed in order to nullify the interval. */
 
         // getting access to active network variables through HelperConfig() script
         HelperConfig helperConfig = new HelperConfig();
@@ -69,7 +66,7 @@ contract RaffleTest is Test {
 
     function testRaffleShouldNotAllowEntryWhenCalculating()
         public
-        raffleEntered
+        raffleEnteredAndTimePassed
     {
         // Act
         raffle.performUpkeep(""); // put the raffle in a calculating state
@@ -122,7 +119,7 @@ contract RaffleTest is Test {
         // raffle.performUpkeep("");
 
         // Act
-        vm.warp(deploymentTimeStamp);
+        vm.warp(raffle.getLastTimeStamp());
         (bool upkeepNeeded, ) = raffle.checkUpkeep("");
         // assert
         assert(!upkeepNeeded);
@@ -142,12 +139,12 @@ contract RaffleTest is Test {
     }
 
     /************************
-        performUpKeep Testcases
+     performUpKeep Testcases
      *************************/
 
     function testPerformUpKeepWillOnlyRunIfCheckUpKeepReturnsTrue()
         public
-        raffleEntered
+        raffleEnteredAndTimePassed
     {
         // Act / Assert
         raffle.performUpkeep("");
@@ -169,7 +166,7 @@ contract RaffleTest is Test {
         raffle.performUpkeep("");
     }
 
-    modifier raffleEntered() {
+    modifier raffleEnteredAndTimePassed() {
         vm.prank(PLAYER);
         raffle.enterRaffle{value: activeNetworkConfig.entranceFee}();
         vm.warp(block.timestamp + activeNetworkConfig.interval + 1);
@@ -179,7 +176,7 @@ contract RaffleTest is Test {
 
     function testPerformUpKeepUpdatesRaffleStateAndEmitsRequestId()
         public
-        raffleEntered
+        raffleEnteredAndTimePassed
     {
         // Arrange
         vm.recordLogs();
@@ -191,5 +188,53 @@ contract RaffleTest is Test {
         uint256 rState = uint256(raffle.getRaffleState());
         assert(rState == 1); // 0 = open, 1 = calculating
         assert(vrfRequestId > 0);
+    }
+
+    /************************
+     fulfillRandomWords Testcases
+     *************************/
+
+    function testFulfillRandomWordsOnlyRunsAfterPerformUpKeepHasExecuted(
+        uint256 randomRequestId
+    ) public raffleEnteredAndTimePassed {
+        vm.expectRevert("nonexistent request");
+        VRFCoordinatorV2Mock(activeNetworkConfig.vrfCoordinator)
+            .fulfillRandomWords(randomRequestId, address(raffle));
+    }
+
+    function testFulfillRandomWordsPicksWinnerResetsStateAndSendMoney()
+        public
+        raffleEnteredAndTimePassed
+    {
+        // Arrange
+        // 1. Add multiple players to the Raffle
+        uint256 totalPlayers = 5;
+        uint256 startingIndex = 1; // as one player has already entered using the raffleEnteredAndTimePassed() modifier
+
+        for (uint256 i = startingIndex; i < totalPlayers; i++) {
+            address player = address(uint160(i));
+            hoax(player, STARTING_BALANCE);
+            raffle.enterRaffle{value: activeNetworkConfig.entranceFee}();
+        }
+
+        uint256 prize = (activeNetworkConfig.entranceFee * totalPlayers);
+
+        // Act
+        vm.recordLogs();
+        raffle.performUpkeep("");
+        Vm.Log[] memory logs = vm.getRecordedLogs();
+        bytes32 requestId = logs[1].topics[1]; // tapping into the RequestedRandomWords event that we emit in the performUpKeep()
+
+        VRFCoordinatorV2Mock(activeNetworkConfig.vrfCoordinator)
+            .fulfillRandomWords(uint256(requestId), address(raffle));
+
+        // Assert
+        assert(raffle.getRecentWinner() != address(0));
+        assert(uint256(raffle.getRaffleState()) == 0);
+        assert(raffle.getLastTimeStamp() < block.timestamp);
+        assert(
+            raffle.getRecentWinner().balance ==
+                (STARTING_BALANCE - activeNetworkConfig.entranceFee + prize)
+        );
     }
 }
