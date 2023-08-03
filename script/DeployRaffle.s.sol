@@ -22,13 +22,13 @@ contract DeployRaffle is Script {
 
         // checking if VRFSubscriptionID is present otherwise create one
         if (subscriptionId == 0) {
-            // Create Subscription
+            // Create VRF Subscription
             CreateSubscription createSubscription = new CreateSubscription();
             subscriptionId = createSubscription.createVRFSubscription(
                 vrfCoordinator
             );
 
-            // Fund subscription
+            // Fund VRF subscription
             FundSubscription fundSubscription = new FundSubscription();
             fundSubscription.fundVRFSubscription(
                 vrfCoordinator,
@@ -37,7 +37,7 @@ contract DeployRaffle is Script {
             );
         }
 
-        // Deploy Raffle (consumer contract)
+        // Deploy Raffle (consumer contract for VRF service)
         vm.startBroadcast();
         Raffle raffle = new Raffle(
             entranceFee,

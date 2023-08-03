@@ -10,6 +10,7 @@ import {HelperConfig} from "../../script/HelperConfig.s.sol";
 contract RaffleTest is Test {
     Raffle internal raffle;
     address PLAYER = makeAddr("player");
+    uint256 public deploymentTimeStamp;
     uint256 public STARTING_BALANCE = 10 ether;
     HelperConfig.NetworkConfig internal activeNetworkConfig;
 
@@ -17,8 +18,13 @@ contract RaffleTest is Test {
     event EnteredRaffle(address indexed PLAYER);
 
     function setUp() external {
+        // Deploy the contract to be tested
         DeployRaffle deployRaffle = new DeployRaffle();
         raffle = deployRaffle.run();
+
+        deploymentTimeStamp = block.timestamp;
+        /* this is been recorded to match the s_lastTimeStamp value of the Raffle.sol contract. 
+        Will be used in `testCheckUpKeepReturnsFalseIfEnoughTimeHasntPassed` to restore the block timestamp to when Raffle was deployed in order to nullify the interval. */
 
         // getting access to active network variables through HelperConfig() script
         HelperConfig helperConfig = new HelperConfig();
@@ -82,5 +88,57 @@ contract RaffleTest is Test {
 
         emit EnteredRaffle(PLAYER); // emit the event that is expected to be emitted
         raffle.enterRaffle{value: activeNetworkConfig.entranceFee}(); // Trigger actual emit
+    }
+
+    /************************
+        CheckUpKeep Testcases
+     *************************/
+
+    function testCheckUpKeepReturnsFalseIfNotEnoughBalance() public {
+        vm.warp(block.timestamp + activeNetworkConfig.interval + 1);
+        vm.roll(block.number + 1);
+
+        (bool upkeepNeeded, ) = raffle.checkUpkeep("");
+        assert(!upkeepNeeded);
+    }
+
+    function testCheckUpKeepReturnsFalseIfCalculating() public {
+        // Arrange
+        vm.warp(block.timestamp + activeNetworkConfig.interval + 1);
+        vm.roll(block.number + 1);
+        raffle.enterRaffle{value: activeNetworkConfig.entranceFee}();
+
+        // Act
+        raffle.performUpkeep("");
+
+        // Assert
+        (bool upkeepNeeded, ) = raffle.checkUpkeep("");
+        assert(!upkeepNeeded);
+    }
+
+    function testCheckUpKeepReturnsFalseIfEnoughTimeHasntPassed() public {
+        // Arrange
+        vm.prank(PLAYER);
+        raffle.enterRaffle{value: activeNetworkConfig.entranceFee}();
+        // raffle.performUpkeep("");
+
+        // Act
+        vm.warp(deploymentTimeStamp);
+        (bool upkeepNeeded, ) = raffle.checkUpkeep("");
+        // assert
+        assert(!upkeepNeeded);
+    }
+
+    function testCheckUpKeepReturnsTrueIfAllParametersAreGood() public {
+        // Arrange
+        vm.prank(PLAYER);
+        raffle.enterRaffle{value: activeNetworkConfig.entranceFee}();
+        vm.warp(block.timestamp + activeNetworkConfig.interval + 1);
+
+        // Act
+        (bool upkeepNeeded, ) = raffle.checkUpkeep("");
+
+        // Assert
+        assert(upkeepNeeded);
     }
 }
