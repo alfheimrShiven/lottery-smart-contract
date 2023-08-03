@@ -6,6 +6,7 @@ import {Test, console} from "forge-std/Test.sol";
 import {DeployRaffle} from "../../script/DeployRaffle.s.sol";
 import {Raffle} from "../../src/Raffle.sol";
 import {HelperConfig} from "../../script/HelperConfig.s.sol";
+import {Vm} from "forge-std/Vm.sol";
 
 contract RaffleTest is Test {
     Raffle internal raffle;
@@ -66,12 +67,10 @@ contract RaffleTest is Test {
         assert(raffle.getRafflePlayer(0) == PLAYER);
     }
 
-    function testRaffleShouldNotAllowEntryWhenCalculating() public {
-        // Arrange to Start the raffle
-        vm.prank(PLAYER);
-        raffle.enterRaffle{value: activeNetworkConfig.entranceFee}();
-        vm.warp(block.timestamp + activeNetworkConfig.interval + 1);
-        vm.roll(block.number + 1);
+    function testRaffleShouldNotAllowEntryWhenCalculating()
+        public
+        raffleEntered
+    {
         // Act
         raffle.performUpkeep(""); // put the raffle in a calculating state
 
@@ -140,5 +139,57 @@ contract RaffleTest is Test {
 
         // Assert
         assert(upkeepNeeded);
+    }
+
+    /************************
+        performUpKeep Testcases
+     *************************/
+
+    function testPerformUpKeepWillOnlyRunIfCheckUpKeepReturnsTrue()
+        public
+        raffleEntered
+    {
+        // Act / Assert
+        raffle.performUpkeep("");
+    }
+
+    function testPerformUpKeepWillOnlyRunIfCheckUpKeepReturnsFalse() public {
+        // Arrange
+        uint256 currentBalance = 0;
+        uint256 numPlayers = 0;
+        uint256 raffleState = 0;
+        vm.expectRevert();
+        /* vm.expectRevert(abi.encodeWithSelector(
+            Raffle.Raffle__UpkeepNotNeeded.selector,
+            currentBalance,
+            numPlayers,
+            raffleState))
+        */
+        //Act / Assert
+        raffle.performUpkeep("");
+    }
+
+    modifier raffleEntered() {
+        vm.prank(PLAYER);
+        raffle.enterRaffle{value: activeNetworkConfig.entranceFee}();
+        vm.warp(block.timestamp + activeNetworkConfig.interval + 1);
+        vm.roll(block.number + 1);
+        _;
+    }
+
+    function testPerformUpKeepUpdatesRaffleStateAndEmitsRequestId()
+        public
+        raffleEntered
+    {
+        // Arrange
+        vm.recordLogs();
+        raffle.performUpkeep("");
+        Vm.Log[] memory entries = vm.getRecordedLogs();
+        bytes32 vrfRequestId = entries[1].topics[1];
+
+        // Assert state change
+        uint256 rState = uint256(raffle.getRaffleState());
+        assert(rState == 1); // 0 = open, 1 = calculating
+        assert(vrfRequestId > 0);
     }
 }
