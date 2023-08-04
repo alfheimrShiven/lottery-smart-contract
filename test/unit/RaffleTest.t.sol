@@ -34,7 +34,8 @@ contract RaffleTest is Test {
             activeNetworkConfig.subscriptionId,
             activeNetworkConfig.gasLane,
             activeNetworkConfig.callbackGasLimit,
-            activeNetworkConfig.link
+            activeNetworkConfig.link,
+            activeNetworkConfig.deployerKey
         ) = helperConfig.activeNetworkConfig();
 
         vm.deal(PLAYER, STARTING_BALANCE);

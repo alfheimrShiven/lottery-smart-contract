@@ -24,7 +24,7 @@ contract CreateSubscription is Script {
     function createVRFSubscriptionUsingConfig() public returns (uint64) {
         // getting the VRF Coordinator
         HelperConfig helperConfig = new HelperConfig();
-        (, , address vrfCoordinator, , , , ) = helperConfig
+        (, , address vrfCoordinator, , , , , ) = helperConfig
             .activeNetworkConfig();
 
         return createVRFSubscription(vrfCoordinator);
@@ -76,7 +76,8 @@ contract FundSubscription is Script {
             uint64 subId,
             ,
             ,
-            address link
+            address link,
+
         ) = helperConfig.activeNetworkConfig();
 
         // fund
@@ -92,13 +93,14 @@ contract AddConsumer is Script {
     function addConsumer(
         address vrfCoordinatorAddress,
         uint64 subId,
-        address consumerContract
+        address consumerContract,
+        uint256 deployerKey
     ) public {
         console.log("Adding consumer contract: ", consumerContract);
         console.log("Using VRFCoordinator: ", vrfCoordinatorAddress);
         console.log("On ChainID: ", block.chainid);
 
-        vm.startBroadcast();
+        vm.startBroadcast(deployerKey);
         VRFCoordinatorV2Mock(vrfCoordinatorAddress).addConsumer(
             subId,
             consumerContract
@@ -108,10 +110,23 @@ contract AddConsumer is Script {
 
     function addConsumerUsingConfig(address consumerContract) public {
         HelperConfig helperConfig = new HelperConfig();
-        (, , address vrfCoordinatorAddress, uint64 subId, , , ) = helperConfig
-            .activeNetworkConfig();
+        (
+            ,
+            ,
+            address vrfCoordinatorAddress,
+            uint64 subId,
+            ,
+            ,
+            ,
+            uint256 deployerKey
+        ) = helperConfig.activeNetworkConfig();
 
-        addConsumer(vrfCoordinatorAddress, subId, consumerContract);
+        addConsumer(
+            vrfCoordinatorAddress,
+            subId,
+            consumerContract,
+            deployerKey
+        );
     }
 
     function run() external {

@@ -16,6 +16,7 @@ contract HelperConfig is Script {
         bytes32 gasLane;
         uint32 callbackGasLimit;
         address link;
+        uint256 deployerKey;
     }
 
     NetworkConfig public activeNetworkConfig;
@@ -26,7 +27,7 @@ contract HelperConfig is Script {
         else activeNetworkConfig = getOrCreateLocalVRFConfig();
     }
 
-    function getSepoliaVRFConfig() private pure returns (NetworkConfig memory) {
+    function getSepoliaVRFConfig() private view returns (NetworkConfig memory) {
         return
             NetworkConfig({
                 entranceFee: 0.1 ether,
@@ -35,7 +36,8 @@ contract HelperConfig is Script {
                 subscriptionId: 4063, // This is from Sepolia Testnet subscription of VRFConsumer
                 gasLane: 0x474e34a077df58807dbe9c96d3c009b23b3c6d0cce433e59bbf5b34f823bc56c,
                 callbackGasLimit: 500000,
-                link: 0x779877A7B0D9E8603169DdbD7836e478b4624789
+                link: 0x779877A7B0D9E8603169DdbD7836e478b4624789,
+                deployerKey: vm.envUint("SEPOLIA_PRIVATE_KEY")
             });
     }
 
@@ -69,7 +71,8 @@ contract HelperConfig is Script {
                 subscriptionId: 0, // if left as 0, our DeployRaffle.s.sol script will create and update this
                 gasLane: 0x474e34a077df58807dbe9c96d3c009b23b3c6d0cce433e59bbf5b34f823bc56c,
                 callbackGasLimit: 500000,
-                link: address(linkToken)
+                link: address(linkToken),
+                deployerKey: vm.envUint("ANVIL_PRIVATE_KEY")
             });
     }
 }
