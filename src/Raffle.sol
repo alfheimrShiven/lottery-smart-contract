@@ -152,7 +152,7 @@ contract Raffle is VRFConsumerBaseV2 {
 
     /*
     CEI design pattern: Checks, Effects, Interactions
-    @dev: fulfillRandomWords is a callback function which is called once requestRandomWords gets the random words from the oracles
+    @dev: fulfillRandomWords function is called once requestRandomWords gets the random words from the oracles
      */
 
     function fulfillRandomWords(

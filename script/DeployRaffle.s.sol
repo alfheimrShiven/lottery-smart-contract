@@ -8,7 +8,7 @@ import {HelperConfig} from "./HelperConfig.s.sol";
 import {CreateSubscription, FundSubscription, AddConsumer} from "./Interactions.s.sol";
 
 contract DeployRaffle is Script {
-    function run() external returns (Raffle) {
+    function run() external returns (Raffle, HelperConfig) {
         HelperConfig helperConfig = new HelperConfig();
         (
             uint256 entranceFee,
@@ -57,6 +57,6 @@ contract DeployRaffle is Script {
             address(raffle)
         );
 
-        return raffle;
+        return (raffle, helperConfig);
     }
 }

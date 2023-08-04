@@ -2,7 +2,7 @@
 
 pragma solidity ^0.8.18;
 
-import {Test, console} from "forge-std/Test.sol";
+import {Test} from "forge-std/Test.sol";
 import {DeployRaffle} from "../../script/DeployRaffle.s.sol";
 import {Raffle} from "../../src/Raffle.sol";
 import {HelperConfig} from "../../script/HelperConfig.s.sol";
@@ -10,7 +10,8 @@ import {Vm} from "forge-std/Vm.sol";
 import {VRFCoordinatorV2Mock} from "@chainlink/contracts/src/v0.8/mocks/VRFCoordinatorV2Mock.sol";
 
 contract RaffleTest is Test {
-    Raffle internal raffle;
+    Raffle public raffle;
+    HelperConfig public helperConfig;
     address PLAYER = makeAddr("player");
     uint256 public deploymentTimeStamp;
     uint256 public STARTING_BALANCE = 10 ether;
@@ -22,10 +23,10 @@ contract RaffleTest is Test {
     function setUp() external {
         // Deploy the contract to be tested
         DeployRaffle deployRaffle = new DeployRaffle();
-        raffle = deployRaffle.run();
+        (raffle, helperConfig) = deployRaffle.run();
 
         // getting access to active network variables through HelperConfig() script
-        HelperConfig helperConfig = new HelperConfig();
+
         (
             activeNetworkConfig.entranceFee,
             activeNetworkConfig.interval,
@@ -219,9 +220,11 @@ contract RaffleTest is Test {
 
         uint256 prize = (activeNetworkConfig.entranceFee * totalPlayers);
 
+        uint256 startingTimeStamp = raffle.getLastTimeStamp();
+
         // Act
         vm.recordLogs();
-        raffle.performUpkeep("");
+        raffle.performUpkeep(""); // will emit the request ID of the requestRandomWords() req. to Chainlink VRF
         Vm.Log[] memory logs = vm.getRecordedLogs();
         bytes32 requestId = logs[1].topics[1]; // tapping into the RequestedRandomWords event that we emit in the performUpKeep()
 
@@ -231,7 +234,7 @@ contract RaffleTest is Test {
         // Assert
         assert(raffle.getRecentWinner() != address(0));
         assert(uint256(raffle.getRaffleState()) == 0);
-        assert(raffle.getLastTimeStamp() < block.timestamp);
+        assert(raffle.getLastTimeStamp() > startingTimeStamp);
         assert(
             raffle.getRecentWinner().balance ==
                 (STARTING_BALANCE - activeNetworkConfig.entranceFee + prize)
