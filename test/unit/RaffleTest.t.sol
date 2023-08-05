@@ -20,6 +20,22 @@ contract RaffleTest is Test {
     // Event
     event EnteredRaffle(address indexed PLAYER);
 
+    // modifiers
+    modifier raffleEnteredAndTimePassed() {
+        vm.prank(PLAYER);
+        raffle.enterRaffle{value: activeNetworkConfig.entranceFee}();
+        vm.warp(block.timestamp + activeNetworkConfig.interval + 1);
+        vm.roll(block.number + 1);
+        _;
+    }
+
+    modifier skipFork() {
+        if (block.chainid != 31337) {
+            return;
+        }
+        _;
+    }
+
     function setUp() external {
         // Deploy the contract to be tested
         DeployRaffle deployRaffle = new DeployRaffle();
@@ -168,14 +184,6 @@ contract RaffleTest is Test {
         raffle.performUpkeep("");
     }
 
-    modifier raffleEnteredAndTimePassed() {
-        vm.prank(PLAYER);
-        raffle.enterRaffle{value: activeNetworkConfig.entranceFee}();
-        vm.warp(block.timestamp + activeNetworkConfig.interval + 1);
-        vm.roll(block.number + 1);
-        _;
-    }
-
     function testPerformUpKeepUpdatesRaffleStateAndEmitsRequestId()
         public
         raffleEnteredAndTimePassed
@@ -198,7 +206,7 @@ contract RaffleTest is Test {
 
     function testFulfillRandomWordsOnlyRunsAfterPerformUpKeepHasExecuted(
         uint256 randomRequestId
-    ) public raffleEnteredAndTimePassed {
+    ) public raffleEnteredAndTimePassed skipFork {
         vm.expectRevert("nonexistent request");
         VRFCoordinatorV2Mock(activeNetworkConfig.vrfCoordinator)
             .fulfillRandomWords(randomRequestId, address(raffle));
@@ -207,6 +215,7 @@ contract RaffleTest is Test {
     function testFulfillRandomWordsPicksWinnerResetsStateAndSendMoney()
         public
         raffleEnteredAndTimePassed
+        skipFork
     {
         // Arrange
         // 1. Add multiple players to the Raffle
