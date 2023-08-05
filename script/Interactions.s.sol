@@ -10,9 +10,10 @@ import {DevOpsTools} from "lib/foundry-devops/src/DevOpsTools.sol";
 
 contract CreateSubscription is Script {
     function createVRFSubscription(
-        address vrfCoordinator
+        address vrfCoordinator,
+        uint256 deployerKey
     ) public returns (uint64) {
-        vm.startBroadcast();
+        vm.startBroadcast(deployerKey);
         uint64 subId = VRFCoordinatorV2Mock(vrfCoordinator)
             .createSubscription();
         vm.stopBroadcast();
@@ -24,10 +25,10 @@ contract CreateSubscription is Script {
     function createVRFSubscriptionUsingConfig() public returns (uint64) {
         // getting the VRF Coordinator
         HelperConfig helperConfig = new HelperConfig();
-        (, , address vrfCoordinator, , , , , ) = helperConfig
+        (, , address vrfCoordinator, , , , , uint256 deployerKey) = helperConfig
             .activeNetworkConfig();
 
-        return createVRFSubscription(vrfCoordinator);
+        return createVRFSubscription(vrfCoordinator, deployerKey);
     }
 
     function run() external returns (uint64) {
@@ -41,7 +42,8 @@ contract FundSubscription is Script {
     function fundVRFSubscription(
         address vrfCoordinator,
         uint64 subId,
-        address link
+        address link,
+        uint256 deployerKey
     ) public {
         console.log("Funding subscription: ", subId);
         console.log("Using VRF Coordinator: ", vrfCoordinator);
@@ -49,7 +51,7 @@ contract FundSubscription is Script {
 
         if (block.chainid == 31337) {
             // fund using VRFCoordinatorV2Mock
-            vm.startBroadcast();
+            vm.startBroadcast(deployerKey);
             VRFCoordinatorV2Mock(vrfCoordinator).fundSubscription(
                 subId,
                 FUND_AMOUNT
@@ -57,7 +59,7 @@ contract FundSubscription is Script {
             vm.stopBroadcast();
         } else {
             // fund using LinkToken Mock
-            vm.startBroadcast();
+            vm.startBroadcast(deployerKey);
             LinkToken(link).transferAndCall(
                 vrfCoordinator,
                 FUND_AMOUNT,
@@ -77,11 +79,11 @@ contract FundSubscription is Script {
             ,
             ,
             address link,
-
+            uint256 deployerKey
         ) = helperConfig.activeNetworkConfig();
 
         // fund
-        fundVRFSubscription(vrfCoordinator, subId, link);
+        fundVRFSubscription(vrfCoordinator, subId, link, deployerKey);
     }
 
     function run() external {

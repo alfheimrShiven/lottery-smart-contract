@@ -26,7 +26,8 @@ contract DeployRaffle is Script {
             // Create VRF Subscription
             CreateSubscription createSubscription = new CreateSubscription();
             subscriptionId = createSubscription.createVRFSubscription(
-                vrfCoordinator
+                vrfCoordinator,
+                deployerKey
             );
 
             // Fund VRF subscription
@@ -34,7 +35,8 @@ contract DeployRaffle is Script {
             fundSubscription.fundVRFSubscription(
                 vrfCoordinator,
                 subscriptionId,
-                link
+                link,
+                deployerKey
             );
         }
 
