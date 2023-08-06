@@ -50,7 +50,7 @@ contract FundSubscription is Script {
         console.log("On chain id: ", block.chainid);
 
         if (block.chainid == 31337) {
-            // fund using VRFCoordinatorV2Mock
+            // fund using VRFCoordinatorV2Mock when using Anvil
             vm.startBroadcast(deployerKey);
             VRFCoordinatorV2Mock(vrfCoordinator).fundSubscription(
                 subId,
