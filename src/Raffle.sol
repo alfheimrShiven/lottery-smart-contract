@@ -23,6 +23,7 @@
 
 pragma solidity ^0.8.18;
 
+import {AutomationCompatibleInterface} from "@chainlink/contracts/src/v0.8/interfaces/AutomationCompatibleInterface.sol";
 import {VRFCoordinatorV2Interface} from "@chainlink/contracts/src/v0.8/interfaces/VRFCoordinatorV2Interface.sol";
 import {VRFConsumerBaseV2} from "@chainlink/contracts/src/v0.8/VRFConsumerBaseV2.sol";
 /*
@@ -41,7 +42,7 @@ error Raffle__UpkeepNotNeeded(
     uint256 raffleState
 );
 
-contract Raffle is VRFConsumerBaseV2 {
+contract Raffle is VRFConsumerBaseV2, AutomationCompatibleInterface {
     // ENUM
     enum RaffleState {
         OPEN,
