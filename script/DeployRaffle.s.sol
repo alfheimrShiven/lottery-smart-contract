@@ -41,7 +41,7 @@ contract DeployRaffle is Script {
         }
 
         // Deploy Raffle (consumer contract for VRF service)
-        vm.startBroadcast();
+        vm.startBroadcast(deployerKey);
         Raffle raffle = new Raffle(
             entranceFee,
             interval,

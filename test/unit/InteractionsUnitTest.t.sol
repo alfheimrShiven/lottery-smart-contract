@@ -8,7 +8,7 @@ import {DeployRaffle} from "../../script/DeployRaffle.s.sol";
 import {HelperConfig} from "../../script/HelperConfig.s.sol";
 import {CreateSubscription, FundSubscription, AddConsumer} from "../../script/Interactions.s.sol";
 
-contract DeployRaffleTest is Test {
+contract InteractionsUnitTest is Test {
     Raffle public raffle;
     HelperConfig public helperConfig;
     uint256 public subscriptionId;

@@ -10,7 +10,7 @@ import {Vm} from "forge-std/Vm.sol";
 import {HelperConfig} from "../../script/HelperConfig.s.sol";
 import {CreateSubscription, FundSubscription, AddConsumer} from "../../script/Interactions.s.sol";
 
-contract InteractionsTest is Test {
+contract InteractionsIntegrationTest is Test {
     uint256 entranceFee = 0.1 ether;
     uint256 interval = 30;
     address public vrfCoordinator;
